@@ -39,13 +39,11 @@ jobs:
           fi
           echo "BRANCH=$BRANCH"                 >> $GITHUB_OUTPUT
 
-      - name: Debug secret passing
+      - name: Skip if actor should be ignored
+        if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
         run: |
-          echo "Checking if secrets are passed correctly:"
-          echo "secrets.APP_ID exists: ${{ secrets.APP_ID != '' }}"
-          echo "secrets.APP_PRIVATE_KEY exists: ${{ secrets.APP_PRIVATE_KEY != '' }}"
-          echo "App ID from secrets: '${{ secrets.APP_ID }}'"
-          echo "Private key first 20 chars: '${{ secrets.APP_PRIVATE_KEY }}'"
+          echo "Skipping mirror for actor ${{ steps.info.outputs.ACTOR }}"
+          exit 0
 
       - name: Generate GitHub App token
         id: generate_token
@@ -55,12 +53,6 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ inputs.target_owner }}
           repositories: ${{ inputs.target_repo }}
-
-      - name: Skip if actor should be ignored
-        if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
-        run: |
-          echo "Skipping mirror for actor ${{ steps.info.outputs.ACTOR }}"
-          exit 0
 
       - name: Mirror branch creation
         if: ${{ steps.info.outputs.EVENT == 'create' }}
@@ -112,8 +104,8 @@ jobs:
             console.log(`Target owner: ${target_owner}`);
             console.log(`Target repo: ${target_repo}`);
             
-            // Skip if branch is empty, undefined, or main
-            if (!branch || branch === 'main' || branch === 'master') {
+            // Skip if branch is empty, undefined, or main or production
+            if (!branch || branch === 'main' || branch === 'production') {
               console.log(`Skipping deletion of branch "${branch}" - likely default branch or empty`);
               return;
             }
