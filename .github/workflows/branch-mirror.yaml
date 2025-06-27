@@ -27,8 +27,15 @@ jobs:
         id: info
         run: |
           echo "EVENT=$GITHUB_EVENT_NAME"       >> $GITHUB_OUTPUT
-          echo "BRANCH=$GITHUB_REF_NAME"        >> $GITHUB_OUTPUT
           echo "ACTOR=$GITHUB_ACTOR"            >> $GITHUB_OUTPUT
+          
+          # For delete events, get the branch name from the event payload
+          if [ "$GITHUB_EVENT_NAME" = "delete" ]; then
+            BRANCH=$(jq -r '.ref' $GITHUB_EVENT_PATH | sed 's/refs\/heads\///')
+          else
+            BRANCH=$GITHUB_REF_NAME
+          fi
+          echo "BRANCH=$BRANCH"                 >> $GITHUB_OUTPUT
 
       - name: Skip if actor should be ignored
         if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
