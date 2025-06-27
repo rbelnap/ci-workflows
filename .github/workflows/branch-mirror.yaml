@@ -1,0 +1,95 @@
+# Declarative reusable workflow for mirroring branch create/delete
+to:
+  inputs:
+    target_owner:
+      required: true
+    target_repo:
+      required: true
+    base_ref:
+      required: true
+    skip_actor:
+      required: false
+      default: github-actions[bot]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine event and ref
+        id: info
+        run: |
+          echo "EVENT=$GITHUB_EVENT_NAME"       >> $GITHUB_OUTPUT
+          echo "BRANCH=$GITHUB_REF_NAME"        >> $GITHUB_OUTPUT
+          echo "ACTOR=$GITHUB_ACTOR"            >> $GITHUB_OUTPUT
+
+      - name: Skip if actor should be ignored
+        if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
+        run: |
+          echo "Skipping mirror for actor ${{ steps.info.outputs.ACTOR }}"
+          exit 0
+
+      - name: Mirror branch creation
+        if: ${{ steps.info.outputs.EVENT == 'create' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = `${{ steps.info.outputs.BRANCH }}`;
+            const { target_owner, target_repo, base_ref } = inputs;
+            // Check existence
+            try {
+              await github.rest.git.getRef({ owner: target_owner, repo: target_repo, ref: `heads/${branch}` });
+              console.log(`refs/heads/${branch} already exists, skipping`);
+            } catch (err) {
+              if (err.status === 404) {
+                // Fetch base SHA
+                const { data: base } = await github.rest.git.getRef({
+                  owner: target_owner,
+                  repo: target_repo,
+                  ref: `heads/${base_ref}`
+                });
+                // Create new ref
+                await github.rest.git.createRef({
+                  owner: target_owner,
+                  repo: target_repo,
+                  ref: `refs/heads/${branch}`,
+                  sha: base.object.sha
+                });
+                console.log(`Created refs/heads/${branch}`);
+              } else {
+                throw err;
+              }
+            }
+
+      - name: Mirror branch deletion
+        if: ${{ steps.info.outputs.EVENT == 'delete' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = `${{ steps.info.outputs.BRANCH }}`;
+            const { target_owner, target_repo } = inputs;
+            // Skip delete if there are any open PRs for this branch
+            const { data: prs } = await github.rest.pulls.list({
+              owner: target_owner,
+              repo: target_repo,
+              head: `${target_owner}:${branch}`,
+              state: 'open'
+            });
+            if (prs.length > 0) {
+              console.log(`Branch ${branch} has open PR(s); skipping delete`);
+              return;
+            }
+            // Proceed to delete if no open PRs
+            try {
+              await github.rest.git.deleteRef({
+                owner: target_owner,
+                repo: target_repo,
+                ref: `heads/${branch}`
+              });
+              console.log(`Deleted refs/heads/${branch}`);
+            } catch (err) {
+              if (err.status === 404) {
+                console.log(`refs/heads/${branch} not found, skipping delete`);
+              } else {
+                throw err;
+              }
+            }
