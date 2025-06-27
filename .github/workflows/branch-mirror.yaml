@@ -1,15 +1,20 @@
 # Declarative reusable workflow for mirroring branch create/delete
-to:
-  inputs:
-    target_owner:
-      required: true
-    target_repo:
-      required: true
-    base_ref:
-      required: true
-    skip_actor:
-      required: false
-      default: github-actions[bot]
+on:
+  workflow_call:
+    inputs:
+      target_owner:
+        required: true
+        type: string
+      target_repo:
+        required: true
+        type: string
+      base_ref:
+        required: true
+        type: string
+      skip_actor:
+        required: false
+        type: string
+        default: github-actions[bot]
 
 jobs:
   mirror:
