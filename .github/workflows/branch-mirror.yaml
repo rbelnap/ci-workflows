@@ -111,16 +111,41 @@ jobs:
             }
             
             try {
+              // First check if the branch exists in the target repo
+              try {
+                await github.rest.git.getRef({
+                  owner: target_owner,
+                  repo: target_repo,
+                  ref: `heads/${branch}`
+                });
+              } catch (err) {
+                if (err.status === 404) {
+                  console.log(`refs/heads/${branch} not found in target repo, skipping delete`);
+                  return;
+                } else {
+                  throw err;
+                }
+              }
+
               // Skip delete if there are any open PRs for this branch
-              const { data: prs } = await github.rest.pulls.list({
-                owner: target_owner,
-                repo: target_repo,
-                head: `${target_owner}:${branch}`,
-                state: 'open'
-              });
-              if (prs.length > 0) {
-                console.log(`Branch ${branch} has open PR(s); skipping delete`);
-                return;
+              try {
+                const { data: prs } = await github.rest.pulls.list({
+                  owner: target_owner,
+                  repo: target_repo,
+                  head: `${target_owner}:${branch}`,
+                  state: 'open'
+                });
+                if (prs.length > 0) {
+                  console.log(`Branch ${branch} has open PR(s); skipping delete`);
+                  return;
+                }
+              } catch (err) {
+                if (err.status === 404) {
+                  console.log(`Branch ${branch} not found when checking PRs, skipping delete`);
+                  return;
+                } else {
+                  throw err;
+                }
               }
 
               // Proceed to delete if no open PRs
