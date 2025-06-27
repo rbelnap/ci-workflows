@@ -53,6 +53,8 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ inputs.target_owner }}
+          repositories: ${{ inputs.target_repo }}
 
       - name: Skip if actor should be ignored
         if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
