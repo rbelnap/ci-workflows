@@ -39,7 +39,9 @@ jobs:
         with:
           script: |
             const branch = `${{ steps.info.outputs.BRANCH }}`;
-            const { target_owner, target_repo, base_ref } = inputs;
+            const target_owner = `${{ inputs.target_owner }}`;
+            const target_repo = `${{ inputs.target_repo }}`;
+            const base_ref = `${{ inputs.base_ref }}`;
             // Check existence
             try {
               await github.rest.git.getRef({ owner: target_owner, repo: target_repo, ref: `heads/${branch}` });
@@ -71,7 +73,8 @@ jobs:
         with:
           script: |
             const branch = `${{ steps.info.outputs.BRANCH }}`;
-            const { target_owner, target_repo } = inputs;
+            const target_owner = `${{ inputs.target_owner }}`;
+            const target_repo = `${{ inputs.target_repo }}`;
             // Skip delete if there are any open PRs for this branch
             const { data: prs } = await github.rest.pulls.list({
               owner: target_owner,
