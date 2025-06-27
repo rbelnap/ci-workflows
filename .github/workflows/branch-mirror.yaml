@@ -16,7 +16,9 @@ on:
         type: string
         default: github-actions[bot]
     secrets:
-      mirror_token:
+      app_id:
+        required: true
+      app_private_key:
         required: true
 
 jobs:
@@ -37,6 +39,13 @@ jobs:
           fi
           echo "BRANCH=$BRANCH"                 >> $GITHUB_OUTPUT
 
+      - name: Generate GitHub App token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.app_id }}
+          private-key: ${{ secrets.app_private_key }}
+
       - name: Skip if actor should be ignored
         if: ${{ inputs.skip_actor == steps.info.outputs.ACTOR }}
         run: |
@@ -47,7 +56,7 @@ jobs:
         if: ${{ steps.info.outputs.EVENT == 'create' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.mirror_token }}
+          github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const branch = `${{ steps.info.outputs.BRANCH }}`;
             const target_owner = `${{ inputs.target_owner }}`;
@@ -82,7 +91,7 @@ jobs:
         if: ${{ steps.info.outputs.EVENT == 'delete' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.mirror_token }}
+          github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const branch = `${{ steps.info.outputs.BRANCH }}`;
             const target_owner = `${{ inputs.target_owner }}`;
