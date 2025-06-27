@@ -47,6 +47,11 @@ jobs:
           echo "App ID from secrets: '${{ secrets.APP_ID }}'"
           echo "Private key first 20 chars: '${{ secrets.APP_PRIVATE_KEY }}'"
 
+      - name: Set environment variables
+        run: |
+          echo "APP_ID=${{ secrets.APP_ID }}" >> $GITHUB_ENV
+          echo "APP_PRIVATE_KEY=${{ secrets.APP_PRIVATE_KEY }}" >> $GITHUB_ENV
+
       - name: Generate GitHub App token
         id: generate_token
         uses: actions/create-github-app-token@v2
