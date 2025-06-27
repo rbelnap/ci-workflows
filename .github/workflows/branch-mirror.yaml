@@ -80,6 +80,18 @@ jobs:
             const branch = `${{ steps.info.outputs.BRANCH }}`;
             const target_owner = `${{ inputs.target_owner }}`;
             const target_repo = `${{ inputs.target_repo }}`;
+            
+            console.log(`Event: ${{ steps.info.outputs.EVENT }}`);
+            console.log(`Branch to delete: "${branch}"`);
+            console.log(`Target owner: ${target_owner}`);
+            console.log(`Target repo: ${target_repo}`);
+            
+            // Skip if branch is empty, undefined, or main
+            if (!branch || branch === 'main' || branch === 'master') {
+              console.log(`Skipping deletion of branch "${branch}" - likely default branch or empty`);
+              return;
+            }
+            
             // Skip delete if there are any open PRs for this branch
             const { data: prs } = await github.rest.pulls.list({
               owner: target_owner,
