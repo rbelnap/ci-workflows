@@ -110,19 +110,20 @@ jobs:
               return;
             }
             
-            // Skip delete if there are any open PRs for this branch
-            const { data: prs } = await github.rest.pulls.list({
-              owner: target_owner,
-              repo: target_repo,
-              head: `${target_owner}:${branch}`,
-              state: 'open'
-            });
-            if (prs.length > 0) {
-              console.log(`Branch ${branch} has open PR(s); skipping delete`);
-              return;
-            }
-            // Proceed to delete if no open PRs
             try {
+              // Skip delete if there are any open PRs for this branch
+              const { data: prs } = await github.rest.pulls.list({
+                owner: target_owner,
+                repo: target_repo,
+                head: `${target_owner}:${branch}`,
+                state: 'open'
+              });
+              if (prs.length > 0) {
+                console.log(`Branch ${branch} has open PR(s); skipping delete`);
+                return;
+              }
+
+              // Proceed to delete if no open PRs
               await github.rest.git.deleteRef({
                 owner: target_owner,
                 repo: target_repo,
